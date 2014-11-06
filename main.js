@@ -9,7 +9,8 @@ var minutesPerHour = 60;
 var hoursPerDay = 24;
 
 // posts twice per day
-var interval = millisecondsPerSecond * secondsPerMinute * minutesPerHour * hoursPerDay * 1/2;
+var postsPerDay = 3
+var interval = millisecondsPerSecond * secondsPerMinute * minutesPerHour * hoursPerDay * 1/postsPerDay;
 
 makeNewPost();
 setInterval(makeNewPost, interval);
