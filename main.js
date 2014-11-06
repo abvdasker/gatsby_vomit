@@ -1,46 +1,65 @@
 var util = require('util');
 var Twitter = require('twitter');
+var fs = require('fs');
+var Markov = require('./lib/markov.js').Markov;
 
-var secrets = require('./config/secrets.json');
-var twit = new Twitter(secrets);
+var millisecondsPerSecond = 1000;
+var secondsPerMinute = 60;
+var minutesPerHour = 60;
+var hoursPerDay = 24;
 
-var theGreatGatsby = readTheGreatGatsby("res/the_great_gatsby.txt");
+var interval = millisecondsPerSecond * secondsPerMinute * minutesPerHour * hoursPerDay;
 
-twit.verifyCredentials(postIfCredentialsAreValid);
+setInterval(function() {
+  var secrets = require('./config/secrets.json');
+  var twit = new Twitter(secrets);
 
-function postIfCredentialsAreValid(data) {
-  var functionName = "validation";
-  if (logSuccessOrFailure(data, functionName)) {
-    functionName = "tweet";
-    tweet("");
-    twit.updateStatus("hello world", function(data) {
-      if (logSuccessOrFailure(data)) {
-        console.log()
+  var theGreatGatsby = readFile("res/the_great_gatsby.txt");
+
+  twit.verifyCredentials(postIfCredentialsAreValid);
+
+  function postIfCredentialsAreValid(data) {
+    var functionName = "validation";
+    if (logSuccessOrFailure(data, functionName)) {
+      var status = getTweetableSentence(new Markov(theGreatGatsby));
+      tweet(status);
+    }
+  }
+
+  function tweet(status) {
+    var functionName = "tweet";
+    twit.updateStatus(status, function(data) {
+      if (logSuccessOrFailure(data, functionName)) {
+        console.log("just tweeted! \n  \"" + status + "\"\n");
       }
     });
   }
-}
 
-function tweet(status) {
-  
-}
-
-function logSuccessOrFailure(data, functionName) {
-  if (typeof data["statusCode"] == "undefined" || data["statusCode"] == 200) {
-    console.log(functionName + " succeeded");
-    return true;
-  } else {
-    console.log(util.inspect(data));
-    console.log(functionName + " failed");
-    return false;
+  function logSuccessOrFailure(data, functionName) {
+    if (typeof data["statusCode"] == "undefined" || data["statusCode"] == 200) {
+      console.log(functionName + " succeeded");
+      return true;
+    } else {
+      console.log(util.inspect(data));
+      console.log(functionName + " failed");
+      return false;
+    }
   }
-}
 
-function readFile(filepath) {
-  var options = {
-    flags: 'r',
-    encoding: 'utf8'
+  function readFile(filepath) {
+    var options = {
+      flags: 'r',
+      encoding: 'utf8'
+    }
+    var file = fs.readFileSync(filepath, options);
+    return file;
   }
-  var file = fs.readFileSync(path, options);
-  return file;
-}
+
+  function getTweetableSentence(markov) {
+    var sentence;
+    do {
+      sentence = markov.generateSentence();
+    } while (sentence.length > 140);
+    return sentence;
+  }
+}, 3000);
