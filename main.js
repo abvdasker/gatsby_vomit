@@ -8,9 +8,14 @@ var secondsPerMinute = 60;
 var minutesPerHour = 60;
 var hoursPerDay = 24;
 
-var interval = millisecondsPerSecond * secondsPerMinute * minutesPerHour * hoursPerDay;
+// posts twice per day
+var interval = millisecondsPerSecond * secondsPerMinute * minutesPerHour * hoursPerDay * 1/2;
 
-setInterval(function() {
+makeNewPost();
+setInterval(makeNewPost, interval);
+
+
+function makeNewPost() {
   var secrets = require('./config/secrets.json');
   var twit = new Twitter(secrets);
 
@@ -62,4 +67,4 @@ setInterval(function() {
     } while (sentence.length > 140);
     return sentence;
   }
-}, 3000);
+}
