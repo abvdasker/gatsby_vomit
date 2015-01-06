@@ -3,68 +3,62 @@ var Twitter = require('twitter');
 var fs = require('fs');
 var Markov = require('./lib/markov.js').Markov;
 
-var millisecondsPerSecond = 1000;
-var secondsPerMinute = 60;
-var minutesPerHour = 60;
-var hoursPerDay = 24;
-
+// Use cron instead of javascript timeout...
+// var millisecondsPerSecond = 1000;
+// var secondsPerMinute = 60;
+// var minutesPerHour = 60;
+// var hoursPerDay = 24;
+//
 // posts twice per day
-var postsPerDay = 3
-var interval = millisecondsPerSecond * secondsPerMinute * minutesPerHour * hoursPerDay * 1/postsPerDay;
+// var postsPerDay = 3
+// var interval = millisecondsPerSecond * secondsPerMinute * minutesPerHour * hoursPerDay * 1/postsPerDay;
+
+var NUM_SENTENCES = 1;
+var NGRAMS = 3;
 
 makeNewPost();
-setInterval(makeNewPost, interval);
+//setInterval(makeNewPost, interval);
 
 
 function makeNewPost() {
   var secrets = require('./config/secrets.json');
-  var twit = new Twitter(secrets);
-
-  var theGreatGatsby = readFile("res/the_great_gatsby.txt");
-
-  twit.verifyCredentials(postIfCredentialsAreValid);
-
-  function postIfCredentialsAreValid(data) {
-    var functionName = "validation";
-    if (logSuccessOrFailure(data, functionName)) {
-      var status = getTweetableSentence(new Markov(theGreatGatsby));
-      tweet(status);
-    }
-  }
-
-  function tweet(status) {
-    var functionName = "tweet";
-    twit.updateStatus(status, function(data) {
-      if (logSuccessOrFailure(data, functionName)) {
-        console.log("just tweeted! \n  \"" + status + "\"\n");
-      }
-    });
-  }
-
-  function logSuccessOrFailure(data, functionName) {
-    if (typeof data["statusCode"] == "undefined" || data["statusCode"] == 200) {
-      console.log(functionName + " succeeded");
-      return true;
+  var client = new Twitter(secrets);
+  
+  var theGreatGatsby = loadText("res/the_great_gatsby.txt");
+  var newStatus = getNewStatus();
+  debugger;
+  client.post('statuses/update', {status: newStatus}, logSuccessOrFailure);
+  
+  function logSuccessOrFailure(error, params, response) {
+    if (error) {
+      console.log(error);
     } else {
-      console.log(util.inspect(data));
-      console.log(functionName + " failed");
-      return false;
+      console.log(params);
+      console.log(response);
     }
   }
+  //twit.verifyCredentials(postIfCredentialsAreValid);
+  
+  function getNewStatus() {
+    var markov = new Markov(theGreatGatsby, NGRAMS, NUM_SENTENCES);
+    var twitterStatus = getTweetableSentence(markov);
+    return twitterStatus;
+  }
 
-  function readFile(filepath) {
+  function loadText(filepath) {
     var options = {
       flags: 'r',
       encoding: 'utf8'
     }
-    var file = fs.readFileSync(filepath, options);
-    return file;
+    var fileText = fs.readFileSync(filepath, options);
+    return fileText;
   }
 
   function getTweetableSentence(markov) {
     var sentence;
     do {
-      sentence = markov.generateSentence();
+      sentence = markov.generateSentences();
+      debugger;
     } while (sentence.length > 140);
     return sentence;
   }

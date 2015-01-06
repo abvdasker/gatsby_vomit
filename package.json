@@ -9,6 +9,6 @@
   "author": "Hal Rogers",
   "license": "ISC",
   "dependencies": {
-    "twitter": "^0.2.13"
+    "twitter": "1.0.1"
   }
 }
